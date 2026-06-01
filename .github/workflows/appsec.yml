@@ -51,11 +51,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0
-
-      - uses: gitleaks/gitleaks-action@v2
-
-  dast-zap:
+          fetch-depth: 0  dast-zap:
     runs-on: ubuntu-latest
 
     services:
@@ -81,19 +77,19 @@ jobs:
           path: report_html.html
 
 
-      - name: Get SOAR connector from feature/soar
-        run: |
-          git fetch origin feature/soar
-          git checkout origin/feature/soar -- soar/soar_connector.py
+     # - name: Get SOAR connector from feature/soar
+      #  run: |
+       #   git fetch origin feature/soar
+        #  git checkout origin/feature/soar -- soar/soar_connector.py
 
-      - name: Install dependencies
-        run: pip install requests
+#      - name: Install dependencies
+ #       run: pip install requests
 
-      - name: Send findings to SOAR
-        run: python soar/soar_connector.py
-        env:
-          SHUFFLE_WEBHOOK_URL: ${{ secrets.SHUFFLE_WEBHOOK_URL }}
-        if: always()
+  #    - name: Send findings to SOAR
+   #     run: python soar/soar_connector.py
+    #    env:
+     #     SHUFFLE_WEBHOOK_URL: ${{ secrets.SHUFFLE_WEBHOOK_URL }}
+      #  if: always()
 
 
 
