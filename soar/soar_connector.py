@@ -30,7 +30,7 @@ FINGERPRINT_FILE = "/tmp/soar_seen.txt"
 
 def fingerprint(finding):
     raw = f"{finding.get('tool','')}-{finding.get('file','')}-{finding.get('rule_id','')}"
-    return hashlib.md5(raw.encode()).hexdigest()
+    return hashlib.sha256(raw.encode()).hexdigest()
 
 def is_duplicate(finding):
     fp = fingerprint(finding)
