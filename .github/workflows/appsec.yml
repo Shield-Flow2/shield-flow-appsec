@@ -87,4 +87,4 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: POST findings to Shuffle
-        run: python3 scripts/post_to_soar.py
+        run: python3 soar/soar_connector.py
