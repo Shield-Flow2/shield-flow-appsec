@@ -60,7 +60,7 @@ jobs:
           tar -xzf gitleaks.tar.gz
           sudo mv gitleaks /usr/local/bin/
       - name: Run Gitleaks (non-blocking) 
-        run: gitleaks detect --source . --no-git --redact --exit-code 0
+        run: gitleaks detect --source . --no-git --baseline-path gitleaks-report.json
 
   dast-zap:
     runs-on: ubuntu-latest
