@@ -1,0 +1,97 @@
+name: ShieldFlow AppSec Pipeline
+
+on:
+  push:
+  pull_request:
+
+jobs:
+
+  sast-semgrep:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: returntocorp/semgrep-action@v1
+        with:
+          config: "p/owasp-top-ten p/javascript"
+
+  sca-trivy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get update
+          sudo apt-get install wget apt-transport-https gnupg lsb-release -y
+          wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+          echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+          sudo apt-get update
+          sudo apt-get install trivy -y
+
+      - name: Run Trivy
+        run: |
+          trivy image --exit-code 1 \
+          --severity HIGH,CRITICAL \
+          --format json \
+          -o trivy.json \
+          bkimminich/juice-shop
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trivy-results
+          path: trivy.json
+
+  secrets-gitleaks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Install Gitleaks
+        run: |
+          VERSION=$(curl -s https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep tag_name | cut -d '"' -f4)
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/${VERSION}/gitleaks_${VERSION#v}_linux_x64.tar.gz" -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz
+          sudo mv gitleaks /usr/local/bin/
+      - name: Run Gitleaks (non-blocking) 
+        run: gitleaks detect --source . --no-git --redact --exit-code 0
+
+  dast-zap:
+    runs-on: ubuntu-latest
+
+    services:
+      juice-shop:
+        image: bkimminich/juice-shop
+        ports:
+          - 3000:3000
+
+    steps:
+      - name: Wait for Juice Shop
+        run: sleep 30
+
+      - uses: zaproxy/action-full-scan@v0.9.0
+        with:
+          target: "http://localhost:3000"
+
+  notify-soar:
+    runs-on: ubuntu-latest
+
+    needs:
+      - sast-semgrep
+      - sca-trivy
+      - secrets-gitleaks
+      - dast-zap
+
+    if: always()
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: POST findings to Shuffle
+        run: python3 soar/soar_connector.py
