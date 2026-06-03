@@ -32,13 +32,28 @@ jobs:
           sudo apt-get update
           sudo apt-get install trivy -y
 
-      - name: Run Trivy
+      - name: Scan Dependencies
         run: |
-          trivy image --exit-code 1 \
-          --severity HIGH,CRITICAL \
-          --format json \
-          -o trivy.json \
-          bkimminich/juice-shop
+          trivy fs \
+            --scanners vuln \
+            --severity HIGH,CRITICAL \
+            --exit-code 1 \
+            --format json \
+            -o trivy-fs.json \
+            .
+
+      - name: Build Docker Image
+        run: |
+          docker build -t shieldflow-app .
+
+      - name: Scan Built Image
+        run: |
+          trivy image \
+            --exit-code 1 \
+            --severity HIGH,CRITICAL \
+            --format json \
+            -o trivy-image.json \
+            shieldflow-app
 
       - uses: actions/upload-artifact@v4
         with:
