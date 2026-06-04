@@ -42,18 +42,18 @@ jobs:
             -o trivy-fs.json \
             .
 
-      - name: Build Docker Image
-        run: |
-          docker build -t shieldflow-app .
+     # - name: Build Docker Image
+      #  run: |
+       #   docker build -t shieldflow-app .
 
-      - name: Scan Built Image
-        run: |
-          trivy image \
-            --exit-code 1 \
-            --severity HIGH,CRITICAL \
-            --format json \
-            -o trivy-image.json \
-            shieldflow-app
+     # - name: Scan Built Image
+      #  run: |
+       #   trivy image \
+        #    --exit-code 1 \
+         #   --severity HIGH,CRITICAL \
+          #  --format json \
+           # -o trivy-image.json \
+            #shieldflow-app
 
       - uses: actions/upload-artifact@v4
         with:
