@@ -59,7 +59,7 @@ jobs:
           curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/${VERSION}/gitleaks_${VERSION#v}_linux_x64.tar.gz" -o gitleaks.tar.gz
           tar -xzf gitleaks.tar.gz
           sudo mv gitleaks /usr/local/bin/
-      - name: Run Gitleaks (non-blocking) 
+      - name: Run Gitleaks (non-blocking)
         run: gitleaks detect --source . --no-git --redact --exit-code 0
 
   dast-zap:
