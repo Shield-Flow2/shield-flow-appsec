@@ -122,7 +122,7 @@ jobs:
           path: report_html.html
 
       - name: Stop Docker target
-        if: ${{ vars,TARGET_IMAGE != '' }}
+        if: ${{ vars.TARGET_IMAGE != '' }}
         run: |
           docker stop target-app
           docker rm target-app
