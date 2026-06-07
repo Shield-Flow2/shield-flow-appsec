@@ -96,7 +96,7 @@ jobs:
         run: |
           docker pull $TARGET_IMAGE
           docker run -d --name target-app \
-            -p 3000:3000 \
+            -p "$TARGET_PORT:$TARGET_PORT" \
             $TARGET_IMAGE
           sleep 30
           echo "Docker target started on port $TARGET_PORT"
