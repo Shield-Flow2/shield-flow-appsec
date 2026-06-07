@@ -4,6 +4,11 @@ on:
   push:
   pull_request:
 
+env:
+  TARGET_IMAGE: ${{ vars.TARGET_IMAGE }}
+  TARGET_URL: ${{ vars.TARGET_URL }}
+  TARGET_PORT: ${{ vars.TARGET_PORT }}
+
 jobs:
 
   sast-semgrep:
@@ -53,12 +58,15 @@ jobs:
             --severity HIGH,CRITICAL \
             --format json \
             -o trivy-image.json \
-            shieldflow-app
+            ${{ vars.TARGET_IMAGE }}
 
+      - name: Upload Trivy Results
       - uses: actions/upload-artifact@v4
         with:
           name: trivy-results
-          path: trivy.json
+          path: |
+            trivy-fs.json
+            trivy-image.json
 
   secrets-gitleaks:
     runs-on: ubuntu-latest
@@ -74,25 +82,50 @@ jobs:
           curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/${VERSION}/gitleaks_${VERSION#v}_linux_x64.tar.gz" -o gitleaks.tar.gz
           tar -xzf gitleaks.tar.gz
           sudo mv gitleaks /usr/local/bin/
-      - name: Run Gitleaks (non-blocking) 
+      - name: Run Gitleaks (non-blocking)
         run: gitleaks detect --source . --no-git --redact --exit-code 0
 
   dast-zap:
     runs-on: ubuntu-latest
-
-    services:
-      juice-shop:
-        image: bkimminich/juice-shop
-        ports:
-          - 3000:3000
-
     steps:
-      - name: Wait for Juice Shop
-        run: sleep 30
+      - name: Checkout
+        uses: actions/checkout@v3
 
+      - name: Start Docker target (if TARGET_IMAGE is set)
+        if: ${{ vars.TARGET_IMAGE != '' }}
+        run: |
+          docker pull ${{ vars.TARGET_IMAGE }}
+          docker run -d --name target-app \
+            -p ${{ vars.TARGET_PORT }}:${{ vars.TARGET_PORT }} \
+            ${{ vars.TARGET_IMAGE }}
+          sleep 30
+          echo "Docker target started"
+
+      - name: Wait for URL target (if no Docker image)
+        if: ${{ vars.TARGET_IMAGE == '' }}
+        run: |
+          echo "Using existing URL target: ${{ vars.TARGET_URL }}"
+          sleep 5
+
+      - name: Run ZAP Full Scan
       - uses: zaproxy/action-full-scan@v0.9.0
         with:
-          target: "http://localhost:3000"
+          target: ${{ vars.TARGET_URL }}
+          fail_action: true
+          cmd_options: '-a'
+
+      - name: Upload ZAP Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-dast-results
+          path: report_html.html
+
+      - name: Stop Docker target
+        if: ${{ vars,TARGET_IMAGE != '' }}
+        run: |
+          docker stop target-app
+          docker rm target-app
 
   notify-soar:
     runs-on: ubuntu-latest
@@ -108,5 +141,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Set up Python
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install requests
+
       - name: POST findings to Shuffle
+        env:
+          SHUFFLE_WEBHOOK_URL: ${{ secrets.SHUFFLE_WEBHOOK_URL }}
         run: python3 soar/soar_connector.py
