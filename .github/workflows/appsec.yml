@@ -91,6 +91,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Debug vars
+        run: |
+          echo "IMAGE: ${{ vars.TARGET_IMAGE }}"
+          echo "PORT: ${{ vars.TARGET_PORT }}"
+          echo "URL: ${{ vars.TARGET_URL }}"
+
       - name: Start Docker target (if TARGET_IMAGE is set)
         if: ${{ vars.TARGET_IMAGE != '' }}
         run: |
@@ -99,7 +105,7 @@ jobs:
             -p ${{ vars.TARGET_PORT }}:${{ vars.TARGET_PORT }} \
             ${{ vars.TARGET_IMAGE }}
           sleep 30
-          echo "Docker target started on port $TARGET_PORT"
+         # echo "Docker target started on port $TARGET_PORT"
 
       - name: Wait for URL target (if no Docker image)
         if: ${{ vars.TARGET_IMAGE == '' }}
