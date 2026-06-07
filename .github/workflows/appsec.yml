@@ -7,7 +7,7 @@ on:
 env:
   TARGET_IMAGE: ${{ vars.TARGET_IMAGE }}
   TARGET_URL: ${{ vars.TARGET_URL }}
-  TARGET_PORT: ${{ vars.TARGET_PORT }}
+  TARGET_PORT: ${{ vars.TARGET_PORT || '3000' }}
 
 jobs:
 
@@ -99,7 +99,7 @@ jobs:
             -p ${{ vars.TARGET_PORT }}:${{ vars.TARGET_PORT }} \
             ${{ vars.TARGET_IMAGE }}
           sleep 30
-          echo "Docker target started"
+          echo "Docker target started on port $TARGET_PORT"
 
       - name: Wait for URL target (if no Docker image)
         if: ${{ vars.TARGET_IMAGE == '' }}
