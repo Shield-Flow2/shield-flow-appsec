@@ -1,4 +1,4 @@
-=name: ShieldFlow AppSec Pipeline
+name: ShieldFlow AppSec Pipeline
 
 on:
   push:
